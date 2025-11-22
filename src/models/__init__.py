@@ -3,15 +3,9 @@ from .ConvLSTMLightning import ConvLSTMLightning
 from .LogisticRegression import LogisticRegression
 from .SMPModel import SMPModel
 from .UTAELightning import UTAELightning
-from .TSViTLightning import TSViTLightning
-from .TSViTLightningSeb import TSViTLightningSeb
-from .TransformerLightning import TransformerLightning
 from .SwinUnetLightning import SwinUnetLightning
 from .SwinUnetTempLightning import SwinUnetTempLightning
-from .SwinUnetTempDumbLightning import SwinUnetTempDumbLightning
 from .UTAELightningDumb import UTAELightningDumb
 from .TransUnetLightning import TransUnetLightning
 from .SMPTempModel import SMPTempModel 
-from .SMPHeavyTempModel import SMPHeavyTempModel 
-from .SwinUnetHeavyTempDumbLightning import SwinUnetHeavyTempDumbLightning
-from .UTAEHeavyLightningDumb import UTAEHeavy
+from .SegFormerLightning import SegFormerLightning
