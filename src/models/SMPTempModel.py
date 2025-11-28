@@ -2,8 +2,8 @@ from typing import Any
 
 import torch
 import segmentation_models_pytorch as smp
-from models.utae_paps_models.ltae import LTAE2d
-from models.utae_paps_models.utae import Temporal_Aggregator
+from src.models.utae_paps_models.ltae import LTAE2d
+from src.models.utae_paps_models.utae import Temporal_Aggregator
 
 from .BaseModel import BaseModel
 
@@ -25,7 +25,7 @@ class SMPTempModel(BaseModel):
             n_channels=n_channels,
             flatten_temporal_dimension=flatten_temporal_dimension,
             pos_class_weight=pos_class_weight,
-            use_doy=True, 
+            use_doy=False, 
             *args,
             **kwargs
         )
@@ -54,7 +54,7 @@ class SMPTempModel(BaseModel):
         print(f"Loaded {encoder_name} with {encoder_weights} weights + LTAE")
 
         
-    def forward(self, x: torch.Tensor, doys: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, doys: torch.Tensor = None) -> torch.Tensor:
         B, T, C, H, W = x.shape
         doys = torch.arange(T, device=x.device).unsqueeze(0).repeat(B, 1)
         num_stages = len(self.model.encoder.out_channels)

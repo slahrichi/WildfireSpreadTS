@@ -1,9 +1,0 @@
-data_dir: /develop/data/WildfireSpreadTS_HDF5
-batch_size: 64
-n_leading_observations: 5
-crop_side_length: 128
-load_from_hdf5: true
-num_workers: 8
-remove_duplicate_features: True
-features_to_keep: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 38, 39]
-n_leading_observations_test_adjustment: 5

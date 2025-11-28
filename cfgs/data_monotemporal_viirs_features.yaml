@@ -1,9 +1,0 @@
-data_dir: /scratch/sl636/WildfireSpreadTS_HDF5
-batch_size: 64
-n_leading_observations: 5
-crop_side_length: 128
-load_from_hdf5: true
-num_workers: 8
-remove_duplicate_features: false
-features_to_keep: [0, 1, 2, 38, 39]
-n_leading_observations_test_adjustment: 5
