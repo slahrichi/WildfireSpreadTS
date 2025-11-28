@@ -3,7 +3,7 @@
 **Title:** *Improved Wildfire Spread Prediction with Time-Series Data and the WSTS+ Benchmark*  
 **Conference:** *IEEE Winter Conference on Applications of Computer Vision (WACV) 2026*  
 **Paper:** [arXiv](https://arxiv.org/abs/2502.12003v3.pdf)  
-**Dataset:** [Zenodo](https://doi.org/10.48550/arXiv.2502.12003)  
+**Dataset:** [Zenodo](https://zenodo.org/records/17584629)  
 **Model Weights:** [HuggingFace](https://huggingface.co/saadlahrichi/WSTSPlus)  
 **Authors:** Saad Lahrichi, Jake Bova, Jesse Johnson, Jordan Malof
 
