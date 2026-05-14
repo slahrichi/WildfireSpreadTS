@@ -1,9 +1,11 @@
-from typing import List
+from pathlib import Path
+from typing import List, Optional
+import json
 import torch
 import numpy as np
 
 
-def get_means_stds_missing_values(training_years: List[int]):
+def get_means_stds_missing_values(training_years: List[int], stats_path: Optional[str] = None):
     """_summary_ Returns mean and std values as tensor, computed on unaugmented and unstandardized 
     data of the indicated training years. We don't clip values, because min/max did not diverge 
     much from the 0.1 and 99.9 percentiles. Some variables are not standardized, indicated by mean=0, std=1. 
@@ -16,7 +18,22 @@ def get_means_stds_missing_values(training_years: List[int]):
     Returns:
         _type_: _description_
     """
-    if (2016 in training_years) or (2023 in training_years):
+    if stats_path is not None:
+        stats_path = Path(stats_path).expanduser()
+        years_key = ",".join(map(str, training_years))
+        with stats_path.open("r") as f:
+            stats_per_training_year_combo = json.load(f)
+        if years_key not in stats_per_training_year_combo:
+            available = ", ".join(sorted(stats_per_training_year_combo))
+            raise KeyError(
+                f"No normalization stats for years {years_key} in {stats_path}. "
+                f"Available year groups: {available}"
+            )
+        stats = stats_per_training_year_combo[years_key]
+        means = np.array(stats["means"], dtype=np.float32)
+        stds = np.array(stats["stds"], dtype=np.float32)
+        missing_values = np.array(stats["missing_values"], dtype=np.float32)
+    elif (2016 in training_years) or (2023 in training_years):
         print("Using means for WSTS+ (all years)")
         stats_per_training_year_combo = {
            (2016): {
@@ -3148,13 +3165,48 @@ def get_means_stds_missing_values(training_years: List[int]):
         ], dtype=np.float32)}}
 
 
-    years_tuple = tuple(training_years)
-    means = stats_per_training_year_combo[years_tuple]["means"]
-    stds = stats_per_training_year_combo[years_tuple]["stds"]
-    missing_values = stats_per_training_year_combo[years_tuple]["missing_values"]
+    def normalize_stats_key(key):
+        if isinstance(key, tuple):
+            return tuple(int(year) for year in key)
+        return (int(key),)
 
-    # Zero out means and stds for degree-based features and the categorical land cover type variable
-    features_to_not_standardize = get_indices_of_degree_features() + [16]
+    if stats_path is None:
+        years_tuple = tuple(int(year) for year in training_years)
+        stats_per_training_year_combo = {
+            normalize_stats_key(key): value
+            for key, value in stats_per_training_year_combo.items()
+        }
+        fallback_stats_path = Path(__file__).resolve().parents[1] / "stats_per_training_year_combo_from_hdf5.npy"
+        external_stats = {}
+        if fallback_stats_path.exists():
+            external_stats = np.load(fallback_stats_path, allow_pickle=True).item()
+            external_stats = {
+                normalize_stats_key(key): value
+                for key, value in external_stats.items()
+            }
+
+        stats_payload = stats_per_training_year_combo.get(years_tuple)
+        if stats_payload is None:
+            stats_payload = external_stats.get(years_tuple)
+
+        if stats_payload is None:
+            available_year_combos = sorted(stats_per_training_year_combo.keys())
+            available_year_combos_external = sorted(external_stats.keys())
+            raise KeyError(
+                f"No normalization stats found for training years {years_tuple}. "
+                f"Available year combinations in utils.py: {available_year_combos}. "
+                f"Available year combinations in {fallback_stats_path}: {available_year_combos_external}"
+            )
+        means = stats_payload["means"]
+        stds = stats_payload["stds"]
+        missing_values = stats_payload["missing_values"]
+
+    # Zero out means/stds for degree features, categorical land cover, and binary
+    # cloud_any when cloud-augmented stats are used.
+    features_to_not_standardize = get_indices_of_degree_features() + [16, 24]
+    features_to_not_standardize = [
+        idx for idx in features_to_not_standardize if idx < len(means)
+    ]
 
     means[features_to_not_standardize] = 0
     stds[features_to_not_standardize] = 1
@@ -3164,7 +3216,7 @@ def get_means_stds_missing_values(training_years: List[int]):
 
 def get_indices_of_degree_features():
     """
-    :return: Indices of features that take values in [0,360] and thus will be transformed via sin
+    :return: Indices of raw features that take values in [0,360] and will be expanded into sin/cos pairs
 
     """
     return [7, 13, 19]
