@@ -614,7 +614,14 @@ class FireSpreadDataset(Dataset):
                     with rasterio.open(img_path, 'r') as ds:
                         imgs.append(ds.read())
                         if lnglat is None:
-                            lnglat = ds.lnglat()
+                            try:
+                                lnglat = ds.lnglat()
+                            except Exception:
+                                # Some WSTS+ TIFs carry no CRS metadata.
+                                lnglat = (float("nan"), float("nan"))
+                if not imgs:
+                    # Some fire directories in the WSTS+ record are empty.
+                    continue
                 x = np.stack(imgs, axis=0)
 
                 # Get dates from filenames
@@ -627,5 +634,9 @@ class FireSpreadDataset(Dataset):
                 x[:, -1, ...] = np.nan_to_num(x[:, -1, ...], nan=0)
 
                 # Turn active fire detection time from hhmm to hh.
-                x[:, -1, ...] = np.floor_divide(x[:, -1, ...], 100)
+                # The original WSTS years store hhmm, but the WSTS+ record
+                # (Zenodo 17584629) already stores hours (values <= 24);
+                # dividing those by 100 would zero every fire detection.
+                if np.nanmax(x[:, -1, ...]) > 24:
+                    x[:, -1, ...] = np.floor_divide(x[:, -1, ...], 100)
                 yield year, fire_name, img_dates, lnglat, x
