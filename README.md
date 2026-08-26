@@ -1,149 +1,122 @@
-# Improved Wildfire Spread Prediction with Time-Series Data and the WSTS+ Benchmark
+# WSTS++ Local Preprocessing and Experiments — Stage 2
 
-**Title:** *Improved Wildfire Spread Prediction with Time-Series Data and the WSTS+ Benchmark*  
-**Conference:** *IEEE Winter Conference on Applications of Computer Vision (WACV) 2026*  
-**Paper:** [arXiv](https://arxiv.org/abs/2502.12003v3.pdf)  
-**Dataset:** [Zenodo](https://doi.org/10.48550/arXiv.2502.12003)  
-**Model Weights:** [HuggingFace](https://huggingface.co/saadlahrichi/WSTSPlus)  
-**Authors:** Saad Lahrichi, Jake Bova, Jesse Johnson, Jordan Malof
+This repository contains the code used for **Stage 2 (S2)** of the WSTS++ preprocessing pipeline, together with the data loading and model-training code used in the accompanying anonymous submission.
 
----
+Stage 2 operates on the imagery produced by the Google Earth Engine pipeline in the companion anonymous repository. For complete feature definitions, dataset design, and experimental protocols, please refer to the accompanying paper.
 
-This repository extends the original **WildfireSpreadTS** benchmark with new models, improved training, and an expanded benchmark dataset, **WSTS+**.
+## Repository contents
 
----
-## Benchmark Results (AP ± Standard Deviation)
+The main components relevant to the submission are:
 
-#### Mean Test AP for T = 1 and T = 5 Across Feature Sets
+* `src/preprocess/CreateHDF5Dataset.py` — converts the downloaded dataset into HDF5 files for efficient training.
+* `src/dataloader/` — preprocessing, feature handling, dataset splitting, and PyTorch data loading.
+* `src/generate_event_split_indices.py` — generates reproducible training/validation splits for the event-based evaluation protocols.
+* `src/generate_normalization_stats.py` — computes normalization statistics from the training years of each fold.
+* `src/models/` — model implementations.
+* `src/train.py` — training and evaluation entry point.
+* `cfgs/` — model, data, and trainer configurations.
 
-| **Fusion Level** | **Model** | **Input Days** | **Veg** | **Multi** | **All** | **# Params** |
-|------------------|-----------|----------------|---------|-----------|---------|-------------|
-| **–** | Res18-UNet *(Gerard et al. 2023)* | 1 | 0.328 ± 0.090 | 0.341 ± 0.085 | 0.341 ± 0.086 | 14.3M |
-| | Res18-UNet | 1 | **0.455 ± 0.090** | **0.468 ± 0.087** | **0.460 ± 0.084** | 14.3M |
-| | Res50-Unet | 1 | **0.457 ± 0.089** | 0.459 ± 0.090 | 0.451 ± 0.093 | 32.5M |
-| | SwinUnet | 1 | 0.432 ± 0.088 | 0.437 ± 0.082 | 0.424 ± 0.090 | 27.2M |
-| | SegFormer | 1 | 0.433 ± 0.080 | 0.436 ± 0.083 | 0.423 ± 0.087 | 27.5M |
-| **Data** | Res18-UNet *(Gerard et al. 2023)* | 5 | 0.333 ± 0.079 | 0.344 ± 0.076 | 0.325 ± 0.108 | 14.4M |
-| | Res18-UNet | 5 | **0.472 ± 0.083** | **0.469 ± 0.087** | **0.460 ± 0.084** | 14.4M |
-| | SwinUnet | 5 | 0.447 ± 0.087 | 0.453 ± 0.083 | 0.435 ± 0.079 | 27.3M |
-| | SegFormer | 5 | 0.439 ± 0.081 | 0.436 ± 0.085 | 0.430 ± 0.082 | 27.7M |
-| **Feature** | UTAE *(Gerard et al. 2023)* | 5 | 0.372 ± 0.088 | 0.350 ± 0.113 | 0.321 ± 0.135 | 1.1M |
-| | UTAE | 5 | 0.452 ± 0.082 | 0.459 ± 0.088 | 0.433 ± 0.099 | 1.1M |
-| | UTAE (Res18) | 5 | **0.478 ± 0.085** | **0.477 ± 0.089** | **0.475 ± 0.091** | 14.6M |
+The S2 pipeline used for WSTS++ includes the corrections described in the paper, including:
 
----
-## Datasets
-### WSTS+ (Extended Benchmark)
+* corrected loading of data spanning multiple years;
+* circular encoding of angular features using sine and cosine;
+* handling of unavailable forecast features as missing values rather than valid observations; and
+* fold-specific computation of normalization statistics using only the corresponding training data.
 
-- **Name:** WSTS+
-- **Years:** 2016–2018; 2021-2023 
-- **Link:** https://doi.org/10.48550/arXiv.2502.12003
+## Setup
 
-### Original WSTS Dataset
+Install the required packages:
 
-- **Name:** WildfireSpreadTS (WSTS)  
-- **Years:** 2018–2021  
-- **Link:** https://doi.org/10.5281/zenodo.8006177  
-
-Both datasets are compatible with the same preprocessing and training code in this repository.
-
-## Model Weights
-
-We release our best T=1 and T=5 models (Res18-Unet and Res18-UTAE) as PyTorch .pth files containing the raw state_dict. They follow a consistent naming convention: ```fold_<foldID>_testAP<value>.pth``` and they are organized in folders by architecture (Res18UNet, Res18UTAE), temporal dimension (T=1 or T=5), and feature set used (Veg, Multi, or All). 
-
-Each model directory contains 12 files: one per cross-validation fold (fold_0 … fold_11). The filename includes the Test AP, allowing for easy identification of best- and worst-performing folds.
-**Link:** [HuggingFace](https://huggingface.co/saadlahrichi/WSTSPlus)
-
-### Loading pretraind Models
-We provide a utility script ```load_trained_model.py``` to allow for quickly loading the pretrained models. Example calls:
-
-```
-python load_trained_model.py \
-    --weights_path /path/to/unet/model/fold_X_testAP0.X.pth \
-    --model unet
+```bash
+pip install -r requirements.txt
 ```
 
-Or for UTAE:
-```
-python load_trained_model.py \
-    --weights_path /path/to/utae/model/fold_Y_testAP0.Y.pth \
-    --model utae
-```
+The experiments were implemented in PyTorch/PyTorch Lightning. Weights & Biases logging can be disabled when reproducing experiments locally:
 
-## Model Comparison Table
-
-| Model | Parameters (M) | FLOPs (G) | Inference Time (ms) | GPU Memory (MB) | Model Size (MB) | Training Time (hours) | Test AP |
-|-------|---------------:|----------:|---------------------:|----------------:|-----------------:|-----------------------:|--------:|
-| ResNet18-UNet | 14.4 | 1.8 | 2.5±0.0 | 70  | 55  | 0.4 | 0.455 |
-| ResNet50-UNet | 32.6 | 3.1 | 5.1±0.1 | 375 | 125 | 1.1 | 0.457 |
-| SwinUnet | 27.2 | 6.1 | 8.9±0.0 | 526 | 106 | 1.8 | 0.432 |
-| SegFormer-B2 | 27.5 | 3.7 | 12.7±0.8 | 865 | 105 | 2.0 | 0.448 |
-| UTAE | 1.1 | 10.6 | 9.5±1.0 | 997 | 4 | 1.0 | 0.452 |
-
----
-
-## WSTS vs. WSTS+ Dataset Comparison
-
-| **Dataset**       | **WSTS**           | **WSTS+**          | **Increase (%)** |
-|-------------------|--------------------|---------------------|------------------|
-| Years             | 4 (2018–2021)      | 8 (2016–2023)       | +100%            |
-| Fire Events       | 607                | 1,005               | +65.6%           |
-| Total Images      | 13,607             | 24,462              | +79.8%           |
-| Active Fire Pixels| 1,878,679          | 2,638,537           | +40.4%           |
-
----
-### Citation
-If you use this fork or the WSTS+ benchmark, please consider citing:
-
-```
-@inproceedings{
-    lahrichi2026improved,
-    title={Improved Wildfire Spread Prediction with Time-Series Data and the WSTS+ Benchmark},
-    author={Saad Lahrichi, Jake Bova, Jesse Johnson, Jordan Malof},
-    booktitle={IEEE Winter Conference on Applications of Computer Vision (WACV) 2026},
-    year={2026},
-    url={https://arxiv.org/abs/2502.12003}
-}
+```bash
+export WANDB_MODE=disabled
 ```
 
-# Highlights from Original README 
+## Preparing the data
 
-## Setup the environment
+### 1. Convert downloaded files to HDF5
 
-``` pip3 install -r requirements.txt ```
+The raw files generated by Stage 1 can be converted using:
 
-## Preparing the dataset
-
-The dataset is freely available at [https://doi.org/10.5281/zenodo.8006177](https://doi.org/10.5281/zenodo.8006177) under CC-BY-4.0. For training, you will need to convert them to HDF5 files, which take up twice as much space but allow for much faster training.
-
-To convert the dataset to HDF5, run:
-```python3 src/preprocess/CreateHDF5Dataset.py --data_dir YOUR_DATA_DIR --target_dir YOUR_TARGET_DIR```
- substituting the path to your local dataset and where you want the HDF5 version of the dataset to be created. 
-
-If you want to skip this step, and simply pass `--data.load_from_hdf5=False` on the command line, but be aware that you won't be able to perform training at any reasonable speed. 
-
-## Re-running the baseline experiments
-
-We use wandb to log experimental results. This can be turned off by setting the environment variable `WANDB_MODE=disabled`. The results will then be logged to a local directory instead.
-
-Experiments are parameterized via yaml files in the `cfgs` directory. Arguments are parsed via the [LightningCLI](https://lightning.ai/docs/pytorch/stable/cli/lightning_cli.html).
-
-Grid searches and repetitions of experiments were done via WandB sweeps. Those are parameterized via yaml files in the `cfgs` directory prefixed with `wandb_`. WandB configuration files ending in `_repetition` contain the configurations for the runs that were used in the paper. They only needed to be _repeated_ five times with varying seeds to estimate the variance of results. We omit explanations of how to use wandb sweeps to run experiments and refer the readers to the [original documentation](https://docs.wandb.ai/guides/sweeps). To run the same experiments without WandB, the parameters specified in the WandB sweep configuration file can simply be passed via the command line. 
-
-For example, to train the U-net architecture on one day of observations, which is specified in `cfgs/unet/wandb_monotemporal_repetition.yaml`, we could simply copy and paste the WandB parameters to the command line:
-
+```bash
+python src/preprocess/CreateHDF5Dataset.py \
+    --data_dir <RAW_DATA_DIR> \
+    --target_dir <HDF5_DATA_DIR>
 ```
-python3 train.py --config=cfgs/unet/res18_monotemporal.yaml --trainer=cfgs/trainer_single_gpu.yaml --data=cfgs/data_monotemporal_full_features.yaml --data.data_dir YOUR_DATA_DIR
-```
-where you replace `YOUR_DATA_DIR` with the path to your local HDF5 dataset. Alternatively, you can permanently set the data directory in the respective data config files. Later arguments overwrite previously given arguments, including parameters defined in config files. 
-## Citation
 
+Specific years can optionally be selected:
+
+```bash
+python src/preprocess/CreateHDF5Dataset.py \
+    --data_dir <RAW_DATA_DIR> \
+    --target_dir <HDF5_DATA_DIR> \
+    --years 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023
 ```
-@inproceedings{
-    gerard2023wildfirespreadts,
-    title={WildfireSpread{TS}: A dataset of multi-modal time series for wildfire spread prediction},
-    author={Sebastian Gerard and Yu Zhao and Josephine Sullivan},
-    booktitle={Thirty-seventh Conference on Neural Information Processing Systems Datasets and Benchmarks Track},
-    year={2023},
-    url={https://openreview.net/forum?id=RgdGkPRQ03}
-}
+
+If `--years` is omitted, all numeric year directories found under the input directory are processed.
+
+### 2. Generate evaluation splits
+
+For the WSTS++ evaluation protocol:
+
+```bash
+python src/generate_event_split_indices.py \
+    --data_dir <HDF5_DATA_DIR> \
+    --output_path <SPLIT_FILE.pkl> \
+    --train_mode wsts_plus_plus \
+    --n_leading_observations <T>
+```
+
+Here, `<T>` is the number of input days used by the corresponding experiment.
+
+### 3. Compute normalization statistics
+
+Normalization statistics should be computed independently for the training years of each fold:
+
+```bash
+python src/generate_normalization_stats.py \
+    --data_dir <HDF5_DATA_DIR> \
+    --train_mode wsts_plus_plus \
+    --output_path <STATS_FILE.json>
+```
+
+The resulting statistics file can then be supplied to the data loader during training.
+
+## Training and evaluation
+
+Experiments are configured using YAML files in `cfgs/` and launched through `src/train.py`.
+
+For example, a single-GPU experiment can be launched using the relevant model and data configurations:
+
+```bash
+python src/train.py \
+    --config=<MODEL_CONFIG> \
+    --trainer=cfgs/trainer_single_gpu.yaml \
+    --data=<DATA_CONFIG> \
+    --data.data_dir=<HDF5_DATA_DIR> \
+    --data.train_mode=wsts_plus_plus \
+    --data.event_split_indices_path=<SPLIT_FILE.pkl> \
+    --data.stats_path=<STATS_FILE.json> \
+    --data.data_fold_id=<FOLD_ID> \
+    --do_train=true \
+    --do_test=true
+```
+
+The configuration files specify the architecture, feature set, temporal input length, optimization settings, and other experimental parameters.
+
+Paths contained in the example YAML files can be overridden from the command line as shown above.
+
+## Stage 1
+
+The Google Earth Engine code used to construct and export the raw daily feature stacks is provided separately in the companion anonymous repository.
+
+## Attribution
+
+This codebase builds on the publicly released WildfireSpreadTS training and evaluation code. The original license and copyright notices are retained in `LICENSE`.
+
+Additional citations, pretrained weights, dataset links, and author information will be restored in the non-anonymous version of this repository.
