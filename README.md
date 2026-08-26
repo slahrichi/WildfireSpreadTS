@@ -68,11 +68,13 @@ For the WSTS++ evaluation protocol:
 python src/generate_event_split_indices.py \
     --data_dir <HDF5_DATA_DIR> \
     --output_path <SPLIT_FILE.pkl> \
-    --train_mode wsts_plus_plus \
+    --train_mode wsts_star \
     --n_leading_observations <T>
 ```
 
 Here, `<T>` is the number of input days used by the corresponding experiment.
+
+For the additional-training-data ablation that holds out individual years from 2018–2021, use --train_mode wsts_plus_plus instead
 
 ### 3. Compute normalization statistics
 
@@ -81,7 +83,7 @@ Normalization statistics should be computed independently for the training years
 ```bash
 python src/generate_normalization_stats.py \
     --data_dir <HDF5_DATA_DIR> \
-    --train_mode wsts_plus_plus \
+    --train_mode wsts_star \
     --output_path <STATS_FILE.json>
 ```
 
@@ -99,7 +101,7 @@ python src/train.py \
     --trainer=cfgs/trainer_single_gpu.yaml \
     --data=<DATA_CONFIG> \
     --data.data_dir=<HDF5_DATA_DIR> \
-    --data.train_mode=wsts_plus_plus \
+    --data.train_mode=wsts_star \
     --data.event_split_indices_path=<SPLIT_FILE.pkl> \
     --data.stats_path=<STATS_FILE.json> \
     --data.data_fold_id=<FOLD_ID> \
